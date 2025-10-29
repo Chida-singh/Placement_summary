@@ -17,10 +17,24 @@ FILES = {
     'applications': os.path.join(BASE_DIR, "applications.json")
 }
 
-# Telegram config
-API_ID = 20581631
-API_HASH = 'e048725183f82fe4e8e4e826549edc88'
-GROUP_NAME = 'Engineering 2026 batch'
+# Telegram config - loaded from environment variables to avoid committing secrets
+try:
+    # optional .env support
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
+# Required env vars: TELEGRAM_API_ID, TELEGRAM_API_HASH
+# Optional: TELEGRAM_GROUP_NAME (defaults to 'Engineering 2026 batch')
+try:
+    API_ID = int(os.environ.get('TELEGRAM_API_ID') or os.environ.get('API_ID'))
+    API_HASH = os.environ.get('TELEGRAM_API_HASH') or os.environ.get('API_HASH')
+except Exception:
+    API_ID = None
+    API_HASH = None
+
+GROUP_NAME = os.environ.get('TELEGRAM_GROUP_NAME', 'Engineering 2026 batch')
 AUTO_REFRESH = 30 * 60 * 1000  # 30 mins
 
 class PlacementTracker:
@@ -415,14 +429,20 @@ class PlacementTracker:
     def telegram_worker(self):
         """Telegram monitoring worker"""
         try:
+            if not API_ID or not API_HASH:
+                # Update status and return without attempting to connect
+                self.root.after(0, lambda: self.update_status(
+                    "Missing TELEGRAM_API_ID/TELEGRAM_API_HASH in environment. Telegram disabled."))
+                return
+
             self.client = TelegramClient('session', API_ID, API_HASH)
             self.client.start()
-            
+
             @self.client.on(events.NewMessage)
             async def handler(event):
                 if event.is_group and GROUP_NAME.lower() in event.chat.title.lower():
                     await self.process_message(event.message)
-            
+
             self.client.run_until_disconnected()
         except Exception as e:
             error_msg = f"Telegram error: {str(e)}"

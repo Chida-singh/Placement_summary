@@ -1,2 +1,15 @@
+# Ignore local API key files and environment files
+apikeys.txt
+.env
+
+# Ignore Telethon session files
+*.session
+session
+session_name.session
+history_session.session
+
+# Byte-compiled / cache
+__pycache__/
+*.pyc
 apikeys.txt
 session_name.session

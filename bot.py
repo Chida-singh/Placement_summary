@@ -1,11 +1,30 @@
 from telethon.sync import TelegramClient, events
 from transformers import pipeline
 import re
+import os
 
-# Step 1: Fill in your credentials
-api_id =  20581631         # Replace with your actual API ID
-api_hash = 'e048725183f82fe4e8e4e826549edc88'    # Replace with your actual API Hash
-group_name = 'Engineering 2026 batch'  # Replace with your actual group title
+# Load credentials from environment variables. This avoids hardcoding secrets in the repo.
+# You can provide these as environment variables or via a local .env file (optional).
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    # python-dotenv is optional; if not installed we continue and rely on actual env vars
+    pass
+
+# Step 1: Fill in your credentials via environment variables
+# Required environment variables: TELEGRAM_API_ID, TELEGRAM_API_HASH
+# Optional: TELEGRAM_GROUP_NAME (defaults to 'Engineering 2026 batch')
+api_id_env = os.environ.get('TELEGRAM_API_ID') or os.environ.get('API_ID')
+api_hash = os.environ.get('TELEGRAM_API_HASH') or os.environ.get('API_HASH')
+group_name = os.environ.get('TELEGRAM_GROUP_NAME', 'Engineering 2026 batch')
+
+if not api_id_env or not api_hash:
+    raise RuntimeError(
+        "Missing Telegram credentials. Set TELEGRAM_API_ID and TELEGRAM_API_HASH as environment variables."
+    )
+
+api_id = int(api_id_env)
 
 # Step 2: Load the NLP summarizer
 summarizer = pipeline("summarization", model="t5-small")
